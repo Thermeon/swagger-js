@@ -1313,7 +1313,7 @@ Resolver.prototype.finish = function (spec, root, resolutionTable, resolvedRefs,
   }
   var existingUnresolved = this.countUnresolvedRefs(spec);
 
-  if(existingUnresolved.length === 0 || this.iteration > 5) {
+  if(existingUnresolved === 0 || this.iteration > 5) {
     this.resolveAllOf(spec.definitions);
     callback.call(this.scope, spec, unresolvedRefs);
   }
@@ -1493,11 +1493,18 @@ Resolver.prototype.resolveAllOf = function(spec, obj, depth) {
   var name;
   for(var key in obj) {
     var item = obj[key];
+    if(typeof item === 'object') {
+      this.resolveAllOf(spec, item, depth + 1);
+    }
     if(item && typeof item.allOf !== 'undefined') {
       var allOf = item.allOf;
       if(Array.isArray(allOf)) {
-        var output = {};
+        var output = JSON.parse(JSON.stringify(item))
+        delete output['allOf'];
         output['x-composed'] = true;
+        if (typeof item['x-resolved-from'] !== 'undefined') {
+          output['x-resolved-from'] = item['x-resolved-from'];
+        }
         for(var i = 0; i < allOf.length; i++) {
           var component = allOf[i];
           var source = 'self';
@@ -1507,7 +1514,7 @@ Resolver.prototype.resolveAllOf = function(spec, obj, depth) {
 
           for(var part in component) {
             if(!output.hasOwnProperty(part)) {
-              output[part] = component[part];
+              output[part] = JSON.parse(JSON.stringify(component[part]))
               if(part === 'properties') {
                 for(name in output[part]) {
                   output[part][name]['x-resolved-from'] = source;
@@ -1518,8 +1525,12 @@ Resolver.prototype.resolveAllOf = function(spec, obj, depth) {
               if(part === 'properties') {
                 var properties = component[part];
                 for(name in properties) {
-                  output.properties[name] = properties[name];
-                  output.properties[name]['x-resolved-from'] = source;
+                  output.properties[name] = JSON.parse(JSON.stringify(properties[name]));
+                  var resolvedFrom = properties[name]['x-resolved-from'];
+                  if (typeof resolvedFrom === 'undefined' || resolvedFrom === 'self') {
+                    resolvedFrom = source;
+                  }
+                  output.properties[name]['x-resolved-from'] = resolvedFrom;
                 }
               }
               else if(part === 'required') {
@@ -1544,9 +1555,6 @@ Resolver.prototype.resolveAllOf = function(spec, obj, depth) {
         }
         obj[key] = output;
       }
-    }
-    if(typeof item === 'object') {
-      this.resolveAllOf(spec, item, depth + 1);
     }
   }
 };
