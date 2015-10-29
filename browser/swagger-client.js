@@ -1334,7 +1334,7 @@ Resolver.prototype.finish = function (spec, root, resolutionTable, resolvedRefs,
   }
   var existingUnresolved = this.countUnresolvedRefs(spec);
 
-  if(existingUnresolved.length === 0 || this.iteration > 5) {
+  if(existingUnresolved === 0 || this.iteration > 5) {
     this.resolveAllOf(spec.definitions);
     callback.call(this.scope, spec, unresolvedRefs);
   }
@@ -1568,14 +1568,11 @@ Resolver.prototype.resolveAllOf = function(spec, obj, depth) {
     if(item && typeof item.allOf !== 'undefined') {
       var allOf = item.allOf;
       if(_.isArray(allOf)) {
-        var output = {};
+        var output = JSON.parse(JSON.stringify(item));
+        delete output['allOf'];
         output['x-composed'] = true;
         if (typeof item['x-resolved-from'] !== 'undefined') {
           output['x-resolved-from'] = item['x-resolved-from'];
-        }
-        output.properties = {};
-        if ( item.example ){
-          output.example = item.example;
         }
         for(var i = 0; i < allOf.length; i++) {
           var component = allOf[i];
@@ -1627,9 +1624,6 @@ Resolver.prototype.resolveAllOf = function(spec, obj, depth) {
         }
         obj[key] = output;
       }
-    }
-    if(_.isObject(item)) {
-      this.resolveAllOf(spec, item, depth + 1);
     }
   }
 };
