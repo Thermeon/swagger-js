@@ -69,6 +69,7 @@ describe('swagger resolver', function () {
           } ]
         },
         Monster: {
+          description: 'useful information',
           allOf : [
             {
               $ref: '#/definitions/Ghoul'
@@ -84,6 +85,7 @@ describe('swagger resolver', function () {
           ]
         },
         Ghoul: {
+          description: 'a ghoul',
           required: [ 'fangs' ],
           properties: {
             fangs: {
@@ -111,6 +113,8 @@ describe('swagger resolver', function () {
       expect(properties.fangs['x-resolved-from']).toBe('#/definitions/Ghoul');
       test.object(properties.hasScales);
       expect(properties.hasScales['x-resolved-from']).toBe('self');
+      expect(spec.definitions.Ghoul.description).toBe('a ghoul');
+      expect(spec.definitions.Monster.description).toBe('useful information');
       test.undefined(spec.definitions.Animal.properties.firstName);
       expect(spec.definitions.Human.example).toBe('this is example');
       done();
